@@ -1,4 +1,3 @@
-<!-- Todo: change to absolute url path once image has been pushed -->
 <img src="https://raw.githubusercontent.com/undeadjess/mcserverjars/refs/heads/main/web/public/assets/images/favicon.png" width="100">
 
 # ServerJars
@@ -27,7 +26,7 @@ ServerJars will then be available on port 80
 -   version: The minecraft version of the jar. (1.16.5, 1.17.1)
 -   build: The build number of the server jar. Only for non-vanilla servers (1, 2, 3, ...)
 
-Both `version` and `build` are optional. if none are specified, the latest version will be returned
+Both `version` and `build` are optional. If none are specified, the latest version will be returned
 
 #### Examples:
 
@@ -42,11 +41,4 @@ Returns the download link for the latest build of the latest version of the pape
 
 ## Future Plans:
 
--   Add support for proxys (velocity, bungeecord, geyser...)
--   Add support for more server jars (only vanilla, paper, and purpur are supported at this time)
--   build bukkit and spigot jars and store them in a cache
-
-## FAQ:
-
--   Why does ServerJars use a database instead of simply fetching the jars from the official websites?
-    -   ServerJars uses a database to store links to the jars as it will be needed when bukkit and spigot jars are added, as they will have to be built from source. This also allows for the jars to be fetched from a local database instead of the official websites, which would be slower.
+-   Build bukkit and spigot jars and store them in a cache
