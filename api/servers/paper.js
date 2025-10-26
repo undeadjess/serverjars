@@ -6,14 +6,33 @@ let cached = null;
 async function preload() {
     if (cached) return cached;
     const versionData = await fetch(baseURL).then((res) => res.json());
-    const versionPromises = versionData.versions.map(async (version) => {
-        const buildRes = await fetch(`${baseURL}/versions/${version}`);
-        const buildJson = await buildRes.json();
-        const builds = buildJson.builds.map((build) => ({
-            build,
-            downloadURL: `${baseURL}/versions/${version}/builds/${build}/downloads/paper-${version}-${build}.jar`,
-        }));
-        return { version, builds };
+
+    // ensure array present
+    const versions = Array.isArray(versionData && versionData.versions)
+        ? versionData.versions
+        : [];
+
+    const versionPromises = versions.map(async (version) => {
+        try {
+            const buildRes = await fetch(`${baseURL}/versions/${version}`);
+            const buildJson = await buildRes.json();
+
+            // ensure array present (again)
+            const buildsArr = Array.isArray(buildJson && buildJson.builds)
+                ? buildJson.builds
+                : [];
+
+            const builds = buildsArr.map((build) => ({
+                build,
+                downloadURL: `${baseURL}/versions/${version}/builds/${build}/downloads/paper-${version}-${build}.jar`,
+            }));
+
+            return { version, builds };
+        } catch (err) {
+            // if a single version fails, skip it instead of fucking everything
+            console.warn(`Failed to load Paper builds for version ${version}:`, err);
+            return { version, builds: [] };
+        }
     });
     const all = await Promise.all(versionPromises);
     cached = all;
