@@ -5,6 +5,8 @@ networks:
 services:
     traefik:
         image: traefik:v2.5
+        container_name: serverjars-traefik
+        restart: unless-stopped
         command:
             - "--providers.docker=true"
             - "--entrypoints.web.address=:80"
@@ -17,8 +19,8 @@ services:
 
     web:
         image: ghcr.io/undeadjess/serverjars-web:production
-        restart: on-failure
         container_name: serverjars-web
+        restart: unless-stopped
         environment:
             LISTEN_PORT: 3000
         depends_on:
@@ -32,7 +34,7 @@ services:
 
     api:
         image: ghcr.io/undeadjess/serverjars-api:production
-        restart: always
+        restart: unless-stopped
         container_name: serverjars-api
         environment:
             DB_HOST: db
@@ -50,8 +52,9 @@ services:
     watchtower:
         command: "serverjars-api serverjars-web --interval 30"
         image: containrrr/watchtower
+        container_name: watchtower
+        restart: unless-stopped
         volumes:
             - "/var/run/docker.sock:/var/run/docker.sock"
-        container_name: watchtower
         networks:
             - serverjars
