@@ -1,41 +1,34 @@
 const semver = require("semver");
-const baseURL = "https://api.papermc.io/v2/projects/paper";
+const baseURL = "https://api.papermc.io/v3/projects/paper";
 let cached = null;
 
-// Prefetch and cache the full structure
 async function preload() {
     if (cached) return cached;
-    const versionData = await fetch(baseURL).then((res) => res.json());
 
-    // ensure array present
-    const versions = Array.isArray(versionData && versionData.versions)
-        ? versionData.versions
-        : [];
+    const versionsRes = await fetch(`${baseURL}/versions`);
+    const versions = await versionsRes.json();
 
-    const versionPromises = versions.map(async (version) => {
+    const versionPromises = versions.map(async (versionObj) => {
+        const version = versionObj.version.id;
         try {
-            const buildRes = await fetch(`${baseURL}/versions/${version}`);
-            const buildJson = await buildRes.json();
-
-            // ensure array present (again)
-            const buildsArr = Array.isArray(buildJson && buildJson.builds)
-                ? buildJson.builds
-                : [];
-
-            const builds = buildsArr.map((build) => ({
-                build,
-                downloadURL: `${baseURL}/versions/${version}/builds/${build}/downloads/paper-${version}-${build}.jar`,
-            }));
-
-            return { version, builds };
+            const buildsRes = await fetch(
+                `${baseURL}/versions/${version}/builds`
+            );
+            const builds = await buildsRes.json();
+            return {
+                version,
+                builds: builds.map((build) => ({
+                    build: build.id,
+                    downloadURL: `https://api.papermc.io${build.downloads.application.url}`,
+                })),
+            };
         } catch (err) {
-            // if a single version fails, skip it instead of fucking everything
-            console.warn(`Failed to load Paper builds for version ${version}:`, err);
+            console.warn(`Failed to load builds for version ${version}:`, err);
             return { version, builds: [] };
         }
     });
-    const all = await Promise.all(versionPromises);
-    cached = all;
+
+    cached = await Promise.all(versionPromises);
     return cached;
 }
 
@@ -60,19 +53,13 @@ module.exports = {
         const data = await preload();
         const entry = data.find((v) => v.version === version);
         if (!entry) throw new Error(`Version ${version} not found`);
-        const buildEntry = entry.builds.find(
-            (b) => Number(b.build) === Number(build)
-        );
-        if (!buildEntry)
-            throw new Error(`Build ${build} not found for version ${version}`);
+        const buildEntry = entry.builds.find((b) => b.build === build);
+        if (!buildEntry) throw new Error(`Build ${build} not found`);
         return buildEntry.downloadURL;
     },
 
     getLatest: async () => {
         const data = await preload();
-        if (data.length === 0) throw new Error("No versions available");
-
-        // Get latest version (first after sorting)
         const sortedVersions = data
             .map((v) => v.version)
             .sort((a, b) =>
@@ -81,8 +68,6 @@ module.exports = {
 
         const latestVersion = sortedVersions[0];
         const versionEntry = data.find((v) => v.version === latestVersion);
-
-        // Get latest build for that version
         const latestBuild = Math.max(
             ...versionEntry.builds.map((b) => b.build)
         );
